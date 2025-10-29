@@ -157,6 +157,64 @@ fun LoginLayout() {
 }
 설명: Column은 자식 요소들을 수직 방향으로 순차적으로 배치하는 가장 기본적인 컨테이너입니다. Modifier는 UI 요소의 크기, 패딩, 배경색 등 스타일과 레이아웃 속성을 선언적으로 정의하는 핵심 도구이며, 체이닝 순서에 따라 적용 결과가 달라질 수 있습니다.
 ____________________________________________________________________________________________________________________________
+컴포즈커피
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+// import com.example.app.R // 프로젝트의 R 파일 경로에 맞게 조정 필요
+
+@Composable
+fun ComposeCoffeeDisplay() {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center // 중앙 정렬
+    ) {
+        // 1. "Compose Coffee" 제목
+        Text(
+            text = "Compose Coffee",
+            style = MaterialTheme.typography.headlineLarge,
+            modifier = Modifier.padding(bottom = 32.dp)
+        )
+
+        // 2. 매장 이미지 (res/drawable 폴더에 이미지 파일이 있어야 합니다)
+        // 예를 들어, compose_coffee_store.jpg 라는 파일이 있다면 R.drawable.compose_coffee_store
+        Image(
+            painter = painterResource(id = R.drawable.compose_coffee_store), // 이미지 리소스 ID
+            contentDescription = "Compose Coffee 매장 전경",
+            modifier = Modifier
+                .fillMaxWidth(0.8f) // 화면 너비의 80% 차지
+                .aspectRatio(16f / 9f) // 이미지 비율 유지 (가로:세로 = 16:9)
+                .clip(MaterialTheme.shapes.medium) // 둥근 모서리 적용
+        )
+
+        // 3. 이미지와 텍스트 사이 간격
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // 4. "위치: 우송대 정문 앞" 텍스트
+        Text(
+            text = "위치: 우송대 정문 앞",
+            style = MaterialTheme.typography.titleLarge
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun ComposeCoffeeDisplayPreview() {
+    // 실제 프로젝트의 테마를 여기에 적용할 수 있습니다.
+    // YourAppTheme {
+        ComposeCoffeeDisplay()
+    // }
+}
+____________________________________________________________________________________________________________________________
 
 
 4주차
@@ -254,6 +312,81 @@ fun SimpleCounter() {
 }
 설명: remember와 mutableStateOf는 UI 상태를 저장하는 데 사용되며, 상태(count.value)가 변경되면 해당 상태를 사용하는 모든 Composable 함수가 자동으로 **재구성(Recomposition)**되어 화면을 갱신합니다. 이는 전통적인 뷰 시스템에서 개발자가 직접 setText()를 호출해야 했던 명령형(Imperative) 방식과 대비되는 선언형(Declarative) 방식의 핵심입니다.
 ____________________________________________________________________________________________________________________________
+스톱워치
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+
+@Composable
+fun StopwatchApp() {
+    // 상태 정의: 시간(초) 및 실행 상태
+    val seconds = remember { mutableIntStateOf(0) }
+    val isRunning = remember { mutableStateOf(false) }
+
+    // 부수 효과: isRunning이 true일 때 1초마다 시간 증가
+    LaunchedEffect(isRunning.value) { 
+        while (isRunning.value) {
+            delay(1000)
+            seconds.intValue++ 
+        }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // 시간 표시 UI
+        Text(
+            text = formatTime(seconds.intValue),
+            style = MaterialTheme.typography.displayLarge
+        )
+        Spacer(modifier = Modifier.height(40.dp))
+
+        Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth(0.8f)) {
+            // 시작/중지 버튼
+            Button(
+                onClick = { isRunning.value = !isRunning.value },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isRunning.value) Color.Red else Color.Green
+                )
+            ) {
+                Text(if (isRunning.value) "일시 중지" else "시작")
+            }
+
+            // 초기화 버튼
+            Button(
+                onClick = { 
+                    isRunning.value = false
+                    seconds.intValue = 0 
+                },
+                enabled = !isRunning.value && seconds.intValue > 0
+            ) {
+                Text("초기화")
+            }
+        }
+    }
+}
+
+// 시간 포맷 (분:초)
+private fun formatTime(totalSeconds: Int): String {
+    val minutes = totalSeconds / 60
+    val secs = totalSeconds % 60
+    return String.format("%02d:%02d", minutes, secs)
+}
+
+@Preview(showBackground = true)
+@Composable
+fun StopwatchPreview() {
+    StopwatchApp()
+}
+____________________________________________________________________________________________________________________________
 
 
 6주차
@@ -296,6 +429,65 @@ fun GameScreen(viewModel: GameViewModel = viewModel()) {
     }
 }
 설명: ViewModel은 비즈니스 로직을 수행하며 StateFlow를 통해 UI에 필요한 **상태(UI State)**를 발행합니다. collectAsState() 함수는 이 StateFlow를 관찰(Observe)하여 값이 변경될 때마다 UI를 자동으로 갱신합니다. 이를 통해 단방향 데이터 흐름(UDF) 원칙을 확립하여 UI 계층(View)과 비즈니스 로직(ViewModel)의 관심사 분리를 달성합니다.
+____________________________________________________________________________________________________________________________
+버블버블
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+
+@Composable
+fun BubbleGameScreenshotView() {
+    Column(
+        modifier = Modifier.fillMaxSize().background(Color(0xFFFBF8F9)), // 이미지 배경색과 유사하게 설정
+        horizontalAlignment = Alignment.CenterHorizontally // 점수 텍스트 중앙 정렬
+    ) {
+        // 1. 점수 표시 텍스트
+        Text(
+            text = "Score: 0",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(top = 16.dp, bottom = 100.dp) // 위쪽 여백과 아래쪽 여백으로 위치 조정
+        )
+
+        // 2. 버블들을 포함할 Row (수평 배치)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly, // 버블들을 고르게 배치
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 왼쪽 버블 (하늘색)
+            Box(
+                modifier = Modifier
+                    .size(60.dp) // 버블 크기
+                    .clip(CircleShape) // 원형으로 클리핑
+                    .background(Color(0xFFB3E0E6)) // 이미지의 하늘색 버블과 유사한 색상
+            )
+            // 오른쪽 버블 (갈색)
+            Box(
+                modifier = Modifier
+                    .size(60.dp) // 버블 크기
+                    .clip(CircleShape) // 원형으로 클리핑
+                    .background(Color(0xFFB0946B)) // 이미지의 갈색 버블과 유사한 색상
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun BubbleGameScreenshotPreview() {
+    // YourAppTheme { // 실제 프로젝트의 테마 적용
+        BubbleGameScreenshotView()
+    // }
+}
 ____________________________________________________________________________________________________________________________
 7주차
 📄 안드로이드 백엔드 서비스(BaaS) 및 공식 아키텍처(MVVM)
