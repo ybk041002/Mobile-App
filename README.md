@@ -35,6 +35,24 @@ GitHub는 Git으로 관리되는 프로젝트를 **원격(Remote)**에 저장하
 업로드	git push origin main	로컬 기록을 GitHub (main 브랜치)로 최종 전송
 다운로드	git pull origin main	GitHub의 최신 변경 사항을 내 컴퓨터로 가져옴
 상태 확인	git status	현재 파일의 변경 상태 확인 (가장 자주 씀!)
+____________________________________________________________________________________________________________________________@Composable
+fun Greeting(name: String, modifier: Modifier = Modifier) {
+    Text(
+        text = "Hello $name!",
+        modifier = modifier
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+    // 테마 적용
+    ComposeLabTheme {
+        Greeting("Android") 
+    }
+}
+설명: @Composable 어노테이션이 붙은 Greeting 함수는 화면에 표시될 UI 요소(여기서는 Text)를 정의합니다. Compose는 이 함수들을 **트리 구조(Composable Tree)**로 조립하여 전체 화면을 구성합니다. @Preview 함수는 실제 기기나 에뮬레이터 없이도 UI를 미리 볼 수 있도록 지원하여 개발 효율성을 높입니다.
+____________________________________________________________________________________________________________________________
 
 
 2주차
@@ -63,6 +81,18 @@ OOP는 현실 세계의 물건처럼 객체를 만들고 그 관계를 정의하
 엘비스 연산자	val len = name?.length ?: 0	앞의 값이 널이면 ?: 뒤의 값(0)을 대신 사용!
 When 문	when (value) { 1 -> ... else -> ... }	자바의 switch보다 훨씬 강력하다! 조건이나 범위 비교도 가능.
 람다/고차 함수	list.filter { it > 5 }	함수를 다른 함수의 인자로 전달 가능! 컬렉션(리스트, 배열) 다룰 때 코드가 엄청 짧아진다.
+____________________________________________________________________________________________________________________________
+fun processText(text: String?) {
+    // 널 안전 호출: text가 null이 아니면 .length 실행, null이면 null 반환
+    val len: Int? = text?.length
+    
+    // 엘비스 연산자: len이 null이면 0을, 아니면 len의 값을 사용
+    val safeLength: Int = len ?: 0 
+
+    println("텍스트 길이: $safeLength")
+}
+설명: 코틀린은 변수 타입에 ?를 붙여 널 허용(Nullable) 변수를 명시적으로 구분합니다. ?. (안전 호출 연산자)는 수신 객체가 널이 아닐 때만 멤버 접근을 허용하여 NullPointerException 발생을 방지합니다. ?: (엘비스 연산자)는 앞의 표현식이 널일 경우 뒤의 값(대체 값)을 반환하도록 하여 널 처리 로직을 간결하게 만듭니다.
+____________________________________________________________________________________________________________________________
 
 
 3주차
@@ -96,6 +126,37 @@ git add .	변경 파일 추적	수정 또는 생성된 파일을 다음 커밋�
 git commit -m "메시지"	버전 기록	준비된 파일들의 변경 내용을 로컬 저장소에 확정 기록합니다.
 git push origin [Branch]	원격 저장소 전송	로컬 커밋 이력을 GitHub 원격 저장소로 업로드하여 반영합니다.
 git pull origin [Branch]	원격 내용 동기화	원격 저장소의 최신 내용을 로컬 저장소로 다운로드하여 동기화합니다.
+____________________________________________________________________________________________________________________________
+@Composable
+fun LoginLayout() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally // 자식 요소 중앙 정렬
+    ) {
+        Text("로그인", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 비밀번호 입력창 (TextField)
+        OutlinedTextField(
+            value = "", 
+            onValueChange = { /* ... */ },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // 확인 버튼 (Button)
+        Button(
+            onClick = { /* 로그인 로직 */ }, 
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+        ) {
+            Text("확인")
+        }
+    }
+}
+설명: Column은 자식 요소들을 수직 방향으로 순차적으로 배치하는 가장 기본적인 컨테이너입니다. Modifier는 UI 요소의 크기, 패딩, 배경색 등 스타일과 레이아웃 속성을 선언적으로 정의하는 핵심 도구이며, 체이닝 순서에 따라 적용 결과가 달라질 수 있습니다.
+____________________________________________________________________________________________________________________________
 
 
 4주차
@@ -128,6 +189,26 @@ Modifier의 역할: Compose에서 XML의 android:layout_width, android:gravity �
 세션 종료 시 정리: 수업 종료 시에는 반드시 다음 명령어를 실행하여 ssh-agent에 등록된 개인 키를 메모리에서 삭제해야 합니다.
 ssh-add -D
 이후 GitHub 로그아웃 및 USB 제거를 통해 보안을 완벽히 유지합니다.
+____________________________________________________________________________________________________________________________
+@Composable
+fun WeightedRow() {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            "버튼 1 (1:3 비율)",
+            modifier = Modifier
+                .weight(1f) // 1의 비율
+                .background(Color.Yellow)
+        )
+        Text(
+            "버튼 2 (3:3 비율)",
+            modifier = Modifier
+                .weight(3f) // 3의 비율
+                .background(Color.Cyan)
+        )
+    }
+}
+설명: Row는 자식 뷰를 수평 방향으로 배치하는 컨테이너입니다. Modifier.weight(Float)는 해당 컨테이너 내에서 남은 공간을 비율에 따라 나누어 가지도록 정의합니다. 이처럼 Compose는 XML의 layout_weight 속성 대신 Modifier를 사용하여 유연하고 직관적인 레이아웃 구성을 가능하게 합니다.
+____________________________________________________________________________________________________________________________
 
 
 5주차
@@ -157,6 +238,22 @@ ssh-add -D
 폰 크기 호환성 단위:
 dp (Density-independent pixels): 화면 밀도(DPI)에 독립적인 단위로, 실제 픽셀 수와 관계없이 모든 화면에서 물리적인 크기를 유사하게 유지하도록 설계되었습니다. 크기 지정 시 주로 사용됩니다.
 sp (Scale-independent pixels): 폰트 크기 지정에 사용되며, dp와 유사하게 밀도 독립적이지만, 사용자 설정의 글꼴 크기 배율에 따라 크기가 조절되어 접근성을 높입니다.
+____________________________________________________________________________________________________________________________
+@Composable
+fun SimpleCounter() {
+    // 1. remember와 mutableStateOf를 사용하여 '상태'를 저장
+    val count = remember { mutableStateOf(0) } 
+
+    // 2. Button 컴포저블: 사용자 '이벤트' (onClick) 처리
+    Button(onClick = { 
+        count.value++ // 상태 업데이트
+    }) { 
+        // 3. Text 컴포저블: 상태 변화 시 '재구성(Recomposition)' 발생
+        Text("클릭 횟수: ${count.value}") 
+    }
+}
+설명: remember와 mutableStateOf는 UI 상태를 저장하는 데 사용되며, 상태(count.value)가 변경되면 해당 상태를 사용하는 모든 Composable 함수가 자동으로 **재구성(Recomposition)**되어 화면을 갱신합니다. 이는 전통적인 뷰 시스템에서 개발자가 직접 setText()를 호출해야 했던 명령형(Imperative) 방식과 대비되는 선언형(Declarative) 방식의 핵심입니다.
+____________________________________________________________________________________________________________________________
 
 
 6주차
@@ -181,8 +278,25 @@ Jetpack Compose는 선언형 UI 모델을 구현하며, 특히 **상태(State)**
 부수 효과 (Side Effect)	컴포저블 함수 외부의 요소(예: 데이터베이스, 네트워크, 리스너)와 상호작용할 때 발생하는 비동기적인 작업.	LaunchedEffect, DisposableEffect
 LaunchedEffect	컴포지션 생명주기 동안 코루틴을 실행하여 부수 효과(예: 비동기 데이터 로드)를 안전하게 처리합니다. 키(Key)가 변경되면 기존 코루틴을 취소하고 새로 시작합니다.	코루틴(Coroutine), 키(Key)
 DisposableEffect	리스너 등록/해제와 같이 **리소스 정리(Cleanup)**가 필요한 부수 효과를 관리합니다. 컴포지션이 종료되거나 키가 변경될 때 onDispose 블록의 정리 로직이 실행됩니다.	onDispose, 메모리 누수 방지
+____________________________________________________________________________________________________________________________
+@Composable
+fun GameScreen(viewModel: GameViewModel = viewModel()) {
+    // StateFlow를 관찰하여 UI 상태를 받음. 상태 변경 시 자동 Recomposition
+    val uiState by viewModel.uiState.collectAsState() 
 
+    // ViewModel이 관리하는 상태를 사용하여 UI 렌더링
+    Text(
+        text = "점수: ${uiState.currentUserData.totalScore}",
+        // ... (다른 UI 요소)
+    )
 
+    // View 이벤트는 ViewModel로 전달 (Upstream)
+    Button(onClick = { viewModel.addPoint() }) {
+        Text("버블 맞추기")
+    }
+}
+설명: ViewModel은 비즈니스 로직을 수행하며 StateFlow를 통해 UI에 필요한 **상태(UI State)**를 발행합니다. collectAsState() 함수는 이 StateFlow를 관찰(Observe)하여 값이 변경될 때마다 UI를 자동으로 갱신합니다. 이를 통해 단방향 데이터 흐름(UDF) 원칙을 확립하여 UI 계층(View)과 비즈니스 로직(ViewModel)의 관심사 분리를 달성합니다.
+____________________________________________________________________________________________________________________________
 7주차
 📄 안드로이드 백엔드 서비스(BaaS) 및 공식 아키텍처(MVVM)
 1. 안드로이드 공식 아키텍처: MVVM 구조 분석
@@ -214,3 +328,15 @@ FCM 구조: 앱은 FCM 서버로부터 **등록 토큰(Registration Token)**을 
 서비스 컴포넌트: MyFirebaseMessageService를 생성하여 FCM 서버가 보낸 메시지 및 토큰을 수신하고 처리합니다.
 매니페스트 설정: AndroidManifest.xml에 해당 서비스 컴포넌트를 등록해야 FCM이 정상적으로 작동합니다.
 활용: 버블 게임의 종료 조건 충족 시, AlertDialog를 통해 사용자에게 즉각적인 피드백을 제공하고, **알림(Notification)**을 통해 앱 외부에서도 게임 종료 상황을 전달하는 등의 방식으로 통합될 수 있습니다.
+____________________________________________________________________________________________________________________________
+# 1. 변경된 모든 파일을 스테이징 영역에 추가 (추적 준비)
+git add . 
+
+# 2. 스테이징된 파일들을 로컬 저장소에 버전으로 기록 (Commit)
+# 메시지에는 커밋 내용을 명확히 요약해야 함
+git commit -m "feat: [기능 구현] 6주차 MVVM 구조 구현 및 스톱워치 기능 추가" 
+
+# 3. 로컬 저장소의 커밋 이력을 원격 저장소(origin)의 main 브랜치로 전송 (Push)
+git push origin main
+설명: Git은 개발 과정 중 파일의 변경 사항을 **커밋(Commit)**이라는 스냅샷 단위로 기록하여 버전 관리를 수행합니다. 위 명령어는 작업 디렉토리의 변경 내용을 add를 통해 스테이징 영역에 올리고, commit으로 로컬 저장소에 확정 기록한 후, push를 통해 GitHub 원격 저장소에 반영하는 표준적인 버전 기록 및 동기화 절차입니다. 이는 프로젝트의 백업, 이력 추적, 그리고 팀원 간 코드 공유를 위한 필수적인 과정입니다.
+____________________________________________________________________________________________________________________________
