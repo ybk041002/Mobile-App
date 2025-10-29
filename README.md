@@ -128,3 +128,89 @@ Modifier의 역할: Compose에서 XML의 android:layout_width, android:gravity �
 세션 종료 시 정리: 수업 종료 시에는 반드시 다음 명령어를 실행하여 ssh-agent에 등록된 개인 키를 메모리에서 삭제해야 합니다.
 ssh-add -D
 이후 GitHub 로그아웃 및 USB 제거를 통해 보안을 완벽히 유지합니다.
+
+
+5주차
+📄 안드로이드 이벤트 처리 및 리소스 관리
+
+1. 사용자 이벤트 처리 및 상태 관리
+사용자 이벤트는 애플리케이션과 사용자 간의 상호작용을 의미하며, 이를 처리하기 위해 리스너(Listener) 패턴과 상태 관리 개념이 활용됩니다.
+1-1. 이벤트 처리의 구조 및 분류
+뷰 이벤트 (View Event)	버튼 클릭, 텍스트 입력 등 특정 UI 요소에서 발생하는 이벤트.	Composable 함수의 onClick 등 람다 함수 매개변수를 통해 이벤트 로직을 직접 구현합니다. (전통적인 뷰 시스템의 리스너 역할)
+터치 이벤트	화면 터치, 드래그, 제스처 등 좌표 기반의 저수준(Low-Level) 이벤트.	Modifier.pointerInput 등을 활용하여 터치 다운(onDown), 이동(onMove), 업(onUp) 등의 동작을 처리합니다.
+키 이벤트	물리적 버튼(볼륨, 시스템 뒤로가기)이나 키보드 입력 시 발생하는 이벤트.	onKeyDown(), onKeyUp() 함수를 재정의하여 처리하며, 최근 뒤로가기 이벤트는 OnBackPressedCallback 함수 사용이 권장됩니다.
+
+1-2. Compose의 상태 관리 기초
+상태 저장 (State Storage): remember 및 mutableStateOf를 사용하여 UI 상태(예: 카운터 숫자, 체크박스 상태)를 저장하고 관리합니다.
+리렌더링 (Re-rendering): 상태가 업데이트되면 Compose 시스템이 자동으로 해당 상태를 사용하는 Composable 함수만 다시 실행하여 화면을 갱신합니다. 이를 **재구성(Recomposition)**이라고 합니다.
+
+2. 애플리케이션 리소스의 활용 및 관리
+리소스(Resource)는 이미지, 문자열, 색상 등 코드가 아닌 외부에 분리하여 관리되는 파일들을 의미하며, 이는 코드의 가독성과 유지보수성, 다국어 지원 및 호환성을 향상시킵니다.
+
+2-1. 리소스의 종류 및 접근 방식
+문자열 (String)	res/values/strings.xml	다국어 지원, 중앙 집중식 문자열 관리.	stringResource(id = R.string.식별자)
+색상 (Color)	res/values/colors.xml	앱 테마 색상, 색상 표준화.	colorResource(id = R.color.식별자)
+이미지/드로어블 (Drawable)res/drawable/UI 구성 요소의 배경, 아이콘, 이미지 등.painterResource(id = R.drawable.식별자)
+
+2-2. 리소스 조건 설정 및 호환성
+리소스 조건 설정: res/ 폴더 내에 -ko, -en, -land, -mdpi 등의 **조건자(Qualifier)**를 사용하여 디렉터리를 생성하면, 기기의 설정(언어, 화면 방향, 밀도 등)에 따라 적절한 리소스를 자동으로 선택하여 적용합니다. (예: values-ko, drawable-land)
+폰 크기 호환성 단위:
+dp (Density-independent pixels): 화면 밀도(DPI)에 독립적인 단위로, 실제 픽셀 수와 관계없이 모든 화면에서 물리적인 크기를 유사하게 유지하도록 설계되었습니다. 크기 지정 시 주로 사용됩니다.
+sp (Scale-independent pixels): 폰트 크기 지정에 사용되며, dp와 유사하게 밀도 독립적이지만, 사용자 설정의 글꼴 크기 배율에 따라 크기가 조절되어 접근성을 높입니다.
+
+
+6주차
+📄 안드로이드 사용자 피드백 및 최신 UI/버전 관리 기법
+
+1. 다이얼로그와 알림을 활용한 사용자 피드백 시스템
+사용자에게 중요한 정보나 즉각적인 결정을 요구할 때 다이얼로그(Dialog)를 사용하며, 앱 외부에서 정보를 전달할 때 알림(Notification)을 사용합니다.
+1-1. 다이얼로그 유형 및 역할
+다이얼로그는 사용자 상호작용의 필수적인 일시적 팝업 형태이며, 사용자의 즉각적인 주의와 응답을 요구합니다.
+AlertDialog	오류 메시지, 최종 확인 등 결정을 요구하는 간단한 메시지 전달.	타이틀, 내용, 버튼(긍정/부정/중립)으로 구성되며, 사용자가 버튼을 누르기 전까지 다른 작업을 방해(모달)할 수 있습니다.
+DatePickerDialog	사용자에게 날짜 선택 기능을 제공.	달력 형태로 날짜를 선택하도록 유도하여 정확한 데이터 입력을 돕습니다.
+ProgressDialog	서버 통신이나 대용량 파일 처리 등 장시간 작업 진행 중임을 표시.	사용자에게 대기 시간을 인지시켜 이탈을 방지합니다.
+
+1-2. 알림 (Notification) 시스템
+알림은 앱이 백그라운드에 있거나 실행 중이지 않을 때 사용자에게 정보를 전달하는 핵심 비동기 통신 채널입니다.
+구조: 알림은 반드시 **채널(Channel)**을 통해 사용자에게 전달되어야 합니다. 채널을 이용하면 사용자가 알림의 중요도나 종류별로 설정(소리, 진동 여부 등)을 개별적으로 제어할 수 있습니다.
+고급 기능: 알림은 단순 텍스트 외에 액션 버튼 추가, **원격 입력(Remote Input)**을 통한 즉각적인 응답, 진행 상황을 표시하는 프로그레스 바(Progress Bar) 등 다양한 형태로 확장될 수 있습니다.
+
+2. Jetpack Compose 고급 상태 및 효과 관리
+Jetpack Compose는 선언형 UI 모델을 구현하며, 특히 **상태(State)**의 변화를 효율적으로 관리하여 UI를 갱신합니다.
+재구성 (Recomposition)	데이터 상태(State)가 변경될 때, 해당 상태를 사용하는 Composable 함수만 다시 호출되어 UI가 갱신되는 과정.	mutableStateOf, remember
+부수 효과 (Side Effect)	컴포저블 함수 외부의 요소(예: 데이터베이스, 네트워크, 리스너)와 상호작용할 때 발생하는 비동기적인 작업.	LaunchedEffect, DisposableEffect
+LaunchedEffect	컴포지션 생명주기 동안 코루틴을 실행하여 부수 효과(예: 비동기 데이터 로드)를 안전하게 처리합니다. 키(Key)가 변경되면 기존 코루틴을 취소하고 새로 시작합니다.	코루틴(Coroutine), 키(Key)
+DisposableEffect	리스너 등록/해제와 같이 **리소스 정리(Cleanup)**가 필요한 부수 효과를 관리합니다. 컴포지션이 종료되거나 키가 변경될 때 onDispose 블록의 정리 로직이 실행됩니다.	onDispose, 메모리 누수 방지
+
+
+7주차
+📄 안드로이드 백엔드 서비스(BaaS) 및 공식 아키텍처(MVVM)
+1. 안드로이드 공식 아키텍처: MVVM 구조 분석
+복잡한 애플리케이션의 유지보수성, 테스트 용이성, 확장성을 확보하기 위해 Google은 MVVM(Model-View-ViewModel) 아키텍처 패턴을 공식적으로 권장합니다.
+1-1. MVVM의 핵심 원칙 및 구성 요소
+View (UI 계층)	화면 표시 및 사용자 상호작용(이벤트) 처리.	화면 렌더링 및 사용자 이벤트 ViewModel로 전달. (Activity, Composable 등)
+ViewModel	View가 필요로 하는 상태(State)를 관리하고, View의 요청에 따라 비즈니스 로직을 수행 (Model과 통신).	View를 위한 UI 상태 관리 및 데이터 계층과의 상호작용 중개.
+Model (데이터 계층)	애플리케이션의 비즈니스 로직 및 데이터 관리 (Repository, Service, DB 등).	**단일 진실 공급원(SSOT)**으로서 데이터의 일관성 및 무결성 보장.
+
+1-2. 단방향 데이터 흐름 (UDF)
+MVVM 구조는 **단방향 데이터 흐름(Unidirectional Data Flow, UDF)**을 따르는 것이 중요합니다.
+상태 흐름: 데이터 계층(Model) → ViewModel → UI 계층(View)으로 **하향식(Downstream)**으로 흐르며 UI를 갱신합니다.
+이벤트 흐름: 사용자 상호작용(이벤트)은 UI 계층 → ViewModel로 **상향식(Upstream)**으로 전달되어 상태를 변경합니다.
+적용: 스톱워치 게임 사례에서, Repository가 데이터의 SSOT를 갱신하면, ViewModel의 StateFlow를 통해 UI 상태가 변경되고, View는 이를 관찰하여 화면을 재구성(Recomposition)합니다.
+
+2. 백엔드 서비스(BaaS) 비교: Firebase vs Supabase
+BaaS는 서버 구축 및 관리에 대한 부담 없이 인증, 데이터베이스, 스토리지 등의 백엔드 기능을 앱에 즉시 연동할 수 있게 해주는 서비스입니다.
+핵심 특징	NoSQL 기반 (Cloud Firestore), Google 생태계 통합.	PostgreSQL 기반 (RDBMS), 오픈 소스 및 자체 호스팅 가능.
+데이터베이스	NoSQL (문서 기반), 실시간 동기화에 최적화.	SQL (관계형), 전통적인 관계형 데이터 관리에 유리.
+디자인 철학	개발 속도와 확장성을 최우선.	데이터 제어, 보안, SQL 사용성을 중시 ('오픈소스 Firebase' 지향).
+주요 기능	인증, FCM(클라우드 메시징), 리얼타임 DB, Storage.	인증, 실시간 구독, 자동 API 생성, 스토리지.
+검색 기능	(Cloud Firestore) 인덱스 기반 검색.	하이브리드 검색 (tsvector + pgvector) 지원으로 고도화된 AI 검색 가능.
+연동	Android SDK를 통해 클라이언트에서 DB 및 서비스에 직접 접근.	클라이언트 SDK를 통해 DB 및 서비스에 직접 접근.
+
+3. Firebase를 활용한 원격 기능 구현 사례
+Firebase는 특히 푸시 알림(FCM) 구현에서 핵심적인 역할을 수행합니다.
+FCM 구조: 앱은 FCM 서버로부터 **등록 토큰(Registration Token)**을 발급받아 서버에 전달합니다. 서버는 이 토큰을 이용해 Firebase 서버에 알림 메시지를 전송하고, Firebase 서버가 메시지를 해당 앱 인스턴스에 푸시합니다.
+안드로이드 구현:
+서비스 컴포넌트: MyFirebaseMessageService를 생성하여 FCM 서버가 보낸 메시지 및 토큰을 수신하고 처리합니다.
+매니페스트 설정: AndroidManifest.xml에 해당 서비스 컴포넌트를 등록해야 FCM이 정상적으로 작동합니다.
+활용: 버블 게임의 종료 조건 충족 시, AlertDialog를 통해 사용자에게 즉각적인 피드백을 제공하고, **알림(Notification)**을 통해 앱 외부에서도 게임 종료 상황을 전달하는 등의 방식으로 통합될 수 있습니다.
