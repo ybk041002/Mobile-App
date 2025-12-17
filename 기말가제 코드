@@ -1,0 +1,315 @@
+___________________________________________________________________________________________________________________
+package com.example.myapplication
+
+import android.os.Bundle
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog   // [A] AlertDialog(팝업/모달) 기능을 쓰기 위한 import
+
+class MainActivity : AppCompatActivity() { // [1] Activity = 앱의 “한 화면”. 생명주기(onCreate 등)를 가짐
+
+    private lateinit var editHourlyWage: EditText         // [2] lateinit: onCreate에서 findViewById로 “나중에 초기화” 약속
+    private lateinit var spinnerDailyHours: Spinner       // [3] Spinner: 드롭다운 선택 UI (Adapter가 데이터 연결)
+    private lateinit var spinnerDaysPerWeek: Spinner
+    private lateinit var spinnerOvertimeHours: Spinner
+    private lateinit var spinnerHoliday: Spinner
+    private lateinit var spinnerTax: Spinner
+    private lateinit var spinnerProbation: Spinner
+    private lateinit var btnCalc: Button                  // [4] Button: 클릭 이벤트 트리거
+    private lateinit var textResult: TextView             // [5] TextView: 결과 출력용
+
+    override fun onCreate(savedInstanceState: Bundle?) {  // [6] onCreate: 화면이 “처음 생성될 때” 한 번 호출되는 시작점
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)            // [7] 이 Activity가 사용할 XML 레이아웃 지정
+
+        editHourlyWage = findViewById(R.id.editHourlyWage)      // [8] findViewById: XML 뷰를 id로 찾아서 변수에 연결
+        spinnerDailyHours = findViewById(R.id.spinnerDailyHours)
+        spinnerDaysPerWeek = findViewById(R.id.spinnerDaysPerWeek)
+        spinnerOvertimeHours = findViewById(R.id.spinnerOvertimeHours)
+        spinnerHoliday = findViewById(R.id.spinnerHoliday)
+        spinnerTax = findViewById(R.id.spinnerTax)
+        spinnerProbation = findViewById(R.id.spinnerProbation)
+        btnCalc = findViewById(R.id.btnCalc)
+        textResult = findViewById(R.id.textResult)
+
+        setupSpinners()                                   // [9] 초기화 함수 분리: onCreate를 깔끔하게(가독성/유지보수)
+
+        btnCalc.setOnClickListener {                      // [10] 이벤트 처리: 버튼 클릭 시 실행될 코드 등록
+            calcPay()
+        }
+    }
+
+    private fun setupSpinners() {                          // [11] Spinner에 들어갈 “선택 목록”을 만드는 곳
+        // 30분 단위: 0.5시간 ~ 24시간
+        val timeLabels = mutableListOf<String>()           // [12] MutableList: add로 항목을 계속 추가할 수 있는 리스트
+        for (i in 1..48) {                                 // [13] 반복문: 1~48 => 0.5시간 * 48 = 24시간
+            val hours = i * 0.5                            // [14] 0.5 단위 계산(30분 단위)
+            val h = hours.toInt()                          // [15] toInt(): 소수점 버림으로 “정수 시간”만 뽑음
+            val m = if (hours - h >= 0.5) 30 else 0        // [16] 조건식: 0.5가 있으면 30분, 아니면 0분
+
+            val label = when {                             // [17] when: 여러 조건 분기(가독성 좋은 switch 느낌)
+                h == 0 && m == 30 -> "30분"
+                m == 0 -> "${h}시간"                       // [18] 문자열 템플릿: ${변수}를 문자열 안에 삽입
+                else -> "${h}시간 30분"
+            }
+            timeLabels.add(label)                          // [19] 리스트에 항목 추가
+        }
+
+        val hoursAdapter = ArrayAdapter(                   // [20] Adapter: Spinner가 “무슨 목록을 보여줄지” 연결해주는 다리
+            this,                                          // [21] this: 현재 Activity(Context). Adapter/Toast/Dialog에 필요
+            android.R.layout.simple_spinner_item,          // [22] 안드로이드 기본 제공 Spinner 아이템 레이아웃
+            timeLabels
+        ).apply {                                          // [23] apply: 객체 생성 후 설정을 묶어서 쓰는 Kotlin 스코프 함수
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) // [24] 드롭다운 펼쳤을 때 레이아웃
+        }
+
+        spinnerDailyHours.adapter = hoursAdapter           // [25] Spinner에 adapter 붙이면 목록이 화면에 뜸
+        spinnerOvertimeHours.adapter = hoursAdapter
+
+        val daysLabels = (1..7).map { "${it}일" }          // [26] map: 1..7을 "1일"~"7일" 문자열 리스트로 변환
+        val daysAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            daysLabels
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        spinnerDaysPerWeek.adapter = daysAdapter
+
+        val holidayAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            listOf("미포함", "포함")                        // [27] listOf: 고정 리스트(변경 필요 없는 옵션)
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        spinnerHoliday.adapter = holidayAdapter
+
+        val taxAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            listOf("미적용", "소득세 3.3%")
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        spinnerTax.adapter = taxAdapter
+
+        val probationAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            listOf("미적용", "적용")
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        spinnerProbation.adapter = probationAdapter
+    }
+
+    private fun calcPay() {                                 // [28] “입력값 읽기 → 계산 → 결과 출력” 핵심 로직
+        val hourlyText = editHourlyWage.text.toString()     // [29] EditText의 입력값은 text(Editable)라서 String으로 변환
+
+        if (hourlyText.isBlank()) {                         // [30] 입력 검증: 빈값이면 계산 못 하게 막기
+            Toast.makeText(this, "시급부터 입력해라 게이야", Toast.LENGTH_SHORT).show() // [31] Toast: 짧게 뜨는 안내 메시지
+            return                                          // [32] return: 여기서 함수 종료(아래 계산 로직 실행 X)
+        }
+
+        val hourly = hourlyText.toDouble()                  // [33] String -> Double 변환(돈/시간 계산은 소수 가능)
+
+        val dailyHours = (spinnerDailyHours.selectedItemPosition + 1) * 0.5     // [34] 선택 인덱스(0부터) + 1 => 1~48단계
+        val daysPerWeek = spinnerDaysPerWeek.selectedItemPosition + 1           // [35] 1~7일
+        val overtimeHoursPerMonth = (spinnerOvertimeHours.selectedItemPosition + 1) * 0.5 // [36] 월 연장근로 시간(0.5단위)
+
+        val holidayOpt = spinnerHoliday.selectedItem.toString()                 // [37] selectedItem: 현재 선택된 “문자열”
+        val taxOpt = spinnerTax.selectedItem.toString()
+        val probationOpt = spinnerProbation.selectedItem.toString()
+
+        val weeksPerMonth = 4.345                         // [38] 월 환산 상수(평균적으로 한 달은 약 4.345주)
+
+        val weeklyHours = dailyHours * daysPerWeek        // [39] 주당 총 근로시간
+        var baseMonthly = hourly * dailyHours * daysPerWeek * weeksPerMonth     // [40] 기본급(월 환산)
+
+        val overtimeMonthly = hourly * 1.5 * overtimeHoursPerMonth              // [41] 연장수당: 통상 1.5배(가정)
+
+        var holidayMonthly = 0.0                           // [42] 주휴수당(조건 충족 시만 더함)
+        if (holidayOpt == "포함" && weeklyHours >= 15.0) {  // [43] 조건문: 주휴는 보통 주 15시간 이상 등 조건이 있음(네 로직 기준)
+            holidayMonthly = hourly * dailyHours * weeksPerMonth                // [44] 주휴수당 계산(네가 잡은 방식)
+        }
+
+        var total = baseMonthly + overtimeMonthly + holidayMonthly              // [45] 총합(세전)
+
+        if (probationOpt == "적용") {                       // [46] 수습 적용 시 90% (네 로직)
+            total *= 0.9
+        }
+
+        val beforeTax = total                               // [47] 세전 금액
+        var afterTax = beforeTax                            // [48] 세후 금액(기본은 세전=세후, 세금 옵션 적용하면 바뀜)
+        var taxAmount = 0.0                                 // [49] 세금 금액
+
+        if (taxOpt == "소득세 3.3%") {                      // [50] 옵션 기반 분기(세금 적용/미적용)
+            taxAmount = beforeTax * 0.033
+            afterTax = beforeTax - taxAmount
+        }
+
+        // 👉 여기서부터 결과 문자열 만들기
+        val resultText = """                               // [51] Kotlin 멀티라인 문자열(따옴표 3개): 줄바꿈 포함해서 작성 가능
+            ▶ 시급: ${hourly.toInt()}원
+            ▶ 일일 근무시간: ${spinnerDailyHours.selectedItem}
+            ▶ 주당 근무일수: ${daysPerWeek}일
+            ▶ 월 연장근로: ${spinnerOvertimeHours.selectedItem}
+            ▶ 주휴수당: $holidayOpt
+            ▶ 세금: $taxOpt
+            ▶ 수습: $probationOpt
+
+            기본급(세전): ${baseMonthly.toInt()}원
+            연장수당: ${overtimeMonthly.toInt()}원
+            주휴수당: ${holidayMonthly.toInt()}원
+
+            합계(세전): ${beforeTax.toInt()}원
+            세금: ${taxAmount.toInt()}원
+            실수령(세후): ${afterTax.toInt()}원
+        """.trimIndent()                                    // [52] trimIndent: 멀티라인 문자열의 들여쓰기 정리(보기 좋게)
+
+        textResult.text = resultText                         // [53] UI 업데이트: TextView에 결과 출력
+
+        AlertDialog.Builder(this)                            // [54] AlertDialog: 팝업 모달 생성(사용자에게 결과를 “강하게” 보여줌)
+            .setTitle("TEAM ANDROID 계산 결과")              // [55] 팝업 제목
+            .setMessage(resultText)                          // [56] 팝업 내용(결과 문자열)
+            .setPositiveButton("확인", null)                 // [57] 확인 버튼(누르면 닫힘). null=추가 동작 없음
+            .show()                                          // [58] 실제 화면에 띄우기
+    }
+}
+
+/*
+[각주 요약]
+[1] Activity/생명주기, [2] lateinit, [3] Spinner, [4] Button, [5] TextView
+[7] setContentView, [8] findViewById, [10] 클릭 이벤트 리스너
+[20] Adapter(ArrayAdapter), [23] apply, [26] map, [29] EditText 입력 읽기
+[30] 입력 검증 + return, [31] Toast 안내
+[34~36] selectedItemPosition으로 0.5 단위 값 만들기
+[38] 월 환산 상수, [41] 연장 1.5배, [43] 조건문으로 주휴 적용, [50] 옵션 분기(세금)
+[51~52] 멀티라인 문자열 + trimIndent, [53] UI 반영, [54~58] AlertDialog로 팝업 출력
+*/
+_______________________________________________________________________   XML   ___________________________________________________________________________________
+<?xml version="1.0" encoding="utf-8"?>
+<!-- [X1] XML 선언: 이 파일이 XML이고 UTF-8 인코딩이라는 뜻 -->
+
+<!-- [X2] ScrollView: 화면이 길어지면 스크롤 가능하게 해주는 컨테이너 -->
+<!-- [X3] match_parent: 부모(화면) 크기만큼 꽉 채움 -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- [X4] LinearLayout: 자식 뷰들을 세로로 쌓기 -->
+    <!-- [X5] wrap_content: 내용만큼만 높이 -->
+    <!-- [X6] orientation=vertical: 위에서 아래로 배치 -->
+    <!-- [X7] padding=16dp: 바깥 여백(화면 밀도에 따라 보정되는 dp 단위) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- [X8] TextView(팀명 헤더): 가운데 정렬 + 굵게 + 큰 글씨 -->
+        <TextView
+            android:id="@+id/textTeamName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TEAM ANDROID"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:padding="12dp" />
+
+        <!-- [X9] 라벨 TextView: 아래 입력칸이 뭔지 설명하는 용도 -->
+        <TextView
+            android:text="시급 (원)"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <!-- [X10] EditText: 시급 입력 -->
+        <!-- [X11] hint: 입력 전 안내문(회색) -->
+        <!-- [X12] inputType=number: 숫자 키보드 + 숫자 입력 유도 -->
+        <EditText
+            android:id="@+id/editHourlyWage"
+            android:hint="예) 10030"
+            android:inputType="number"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:text="일일 근무시간"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <!-- [X13] Spinner: 드롭다운 선택(코드에서 Adapter로 목록 연결됨) -->
+        <Spinner
+            android:id="@+id/spinnerDailyHours"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:text="주당 근무일수"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <Spinner
+            android:id="@+id/spinnerDaysPerWeek"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:text="월 연장 근무시간"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <Spinner
+            android:id="@+id/spinnerOvertimeHours"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:text="주휴수당"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <Spinner
+            android:id="@+id/spinnerHoliday"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:text="세금"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <Spinner
+            android:id="@+id/spinnerTax"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:text="수습 여부"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <Spinner
+            android:id="@+id/spinnerProbation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <!-- [X14] Button: 클릭 이벤트 트리거(코드에서 setOnClickListener로 calcPay 실행) -->
+        <Button
+            android:id="@+id/btnCalc"
+            android:text="계산하기"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <!-- [X15] TextView: 결과 표시 영역 -->
+        <TextView
+            android:id="@+id/textResult"
+            android:text="결과가 여기에 표시됩니다"
+            android:textSize="16sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+</ScrollView>
